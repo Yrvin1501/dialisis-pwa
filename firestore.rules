@@ -1,0 +1,21 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{db}/documents {
+    function signedIn() { return request.auth != null; }
+    function role() { return get(/databases/$(db)/documents/users/$(request.auth.uid)).data.role; }
+    function isAdmin() { return signedIn() && role() == 'admin'; }
+    function isTech()  { return signedIn() && role() in ['admin', 'tecnico']; }
+    function stamped() { return request.resource.data.updatedBy == request.auth.token.email; }
+
+    match /users/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow create: if signedIn() && request.auth.uid == uid && request.resource.data.role == 'lector';
+      allow update, delete: if isAdmin();   // solo Admin cambia roles
+    }
+    match /equipos/{id} {
+      allow read: if signedIn();
+      allow create, update: if isTech() && stamped();
+      allow delete: if isAdmin();
+    }
+  }
+}
