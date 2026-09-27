@@ -1,1 +1,5 @@
-{ "projects": { "default": "dashboard-fresenius-medical" } }
+{
+  "projects": {
+    "default": "dashboard-fresenius-medical"
+  }
+}
