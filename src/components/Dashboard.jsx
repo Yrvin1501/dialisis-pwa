@@ -6,7 +6,8 @@ const Card = ({ label, value, color = "bg-white" }) => (
   <div className={`${color} rounded-xl shadow p-4`}><p className="text-xs text-gray-600">{label}</p><p className="text-2xl font-bold">{value}</p></div>
 );
 
-export default function Dashboard({ equipos }) {
+export default function Dashboard({ equipos, solicitudes = [] }) {
+  const pendientes = solicitudes.filter((s) => s.estado !== "Resuelta").sort((a, b) => (a.solicitadoEn?.toMillis?.() || 0) - (b.solicitadoEn?.toMillis?.() || 0));
   const n = (f) => equipos.filter(f).length;
   const sem = (s) => n((e) => semaforo(e) === s);
   const urgentes = n((e) => ["Crítica", "Alta"].includes(e.criticidad) && ["vencido", "proximo"].includes(semaforo(e)));
@@ -30,6 +31,7 @@ export default function Dashboard({ equipos }) {
         <Card label="Total equipos" value={equipos.length} />
         <Card label="Operativos" value={n((e) => e.estadoOperativo === "Operativo")} />
         <Card label="En mantenimiento" value={n((e) => e.estadoOperativo === "En Mantenimiento")} />
+        <Card label="En desinfección" value={n((e) => e.estadoOperativo === "En Desinfección")} />
         <Card label="Fuera de servicio" value={n((e) => e.estadoOperativo === "Fuera de Servicio")} />
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -38,6 +40,18 @@ export default function Dashboard({ equipos }) {
         <Card label="Al día" value={sem("aldia")} color="bg-green-100" />
         <Card label="Crítico/Alto que requieren atención" value={urgentes} color="bg-orange-100" />
       </div>
+      {pendientes.length > 0 && (
+        <div className="bg-red-50 border border-red-200 text-red-800 rounded-xl p-4 space-y-2">
+          <p className="font-semibold">⚠ Equipos averiados que requieren atención ({pendientes.length})</p>
+          {pendientes.slice(0, 5).map((s) => (
+            <div key={s.id} className="text-sm border-t border-red-200 pt-2">
+              {s.equipoId && <p className="font-medium">{s.marca} {s.modelo} · {s.numSerie} — {s.hospital}</p>}
+              <p className="text-red-700">{s.problema}</p>
+            </div>
+          ))}
+          {pendientes.length > 5 && <p className="text-xs">+{pendientes.length - 5} más — ver pestaña Solicitudes</p>}
+        </div>
+      )}
       <div className="bg-white rounded-xl shadow p-4">
         <p className="font-semibold mb-2">Disponibilidad del parque: {disp}%</p>
         <div className="h-3 bg-gray-200 rounded"><div className="h-3 bg-green-500 rounded" style={{ width: `${disp}%` }} /></div>
